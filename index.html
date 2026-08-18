@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Codex Pet Playground（ローカル読み込み版）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23101114'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%236ee7b7'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #101114;
+    --surface: #1a1c21;
+    --surface2: #23262c;
+    --border: #31353d;
+    --accent: #6ee7b7;
+    --accent-dim: rgba(110,231,183,0.12);
+    --text: #e8eaed;
+    --text-dim: #9aa0a8;
+    --danger: #ff6b6b;
+    --warn: #f5c25f;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+    line-height: 1.6;
+  }
+
+  header {
+    max-width: 980px;
+    margin: 0 auto 16px;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .privacy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(110,231,183,0.3);
+    padding: 6px 10px;
+    border-radius: 6px;
+  }
+
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .panel h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 12px;
+  }
+
+  /* --- 読み込み --- */
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    position: relative;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .drop-zone p { color: var(--text-dim); font-size: 13.5px; margin: 4px 0; }
+  .drop-zone strong { color: var(--text); }
+
+  .file-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12.5px;
+  }
+
+  .file-chip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .file-chip.ok { color: var(--accent); border-color: rgba(110,231,183,0.4); }
+  .file-chip.missing { color: var(--text-dim); }
+
+  .error-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255,107,107,0.1);
+    border: 1px solid rgba(255,107,107,0.3);
+    color: var(--danger);
+    font-size: 13px;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* --- 情報 --- */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px 16px;
+    font-size: 13px;
+  }
+  .meta-grid dt { color: var(--text-dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+  .meta-grid dd { margin: 2px 0 0; word-break: break-word; }
+
+  .warn-box {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(245,194,95,0.1);
+    border: 1px solid rgba(245,194,95,0.3);
+    color: var(--warn);
+    font-size: 12.5px;
+    display: none;
+  }
+  .warn-box.show { display: block; }
+
+  /* --- ビューポート --- */
+  .viewer-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 220px;
+    border-radius: 8px;
+    overflow: auto;
+    padding: 16px;
+  }
+
+  #stage {
+    image-rendering: -webkit-optimize-contrast;
+    display: block;
+  }
+
+  .placeholder {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    text-align: center;
+  }
+
+  /* --- コントロール --- */
+  .control-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .control-row:last-child { margin-bottom: 0; }
+
+  button.anim-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    min-height: 40px;
+  }
+  button.anim-btn:hover { border-color: var(--accent); }
+  button.anim-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.anim-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .slider-row label { width: 100px; flex-shrink: 0; color: var(--text-dim); }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-row .value { width: 64px; text-align: right; flex-shrink: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .bg-swatches { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .swatch {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .swatch.active { border-color: var(--accent); }
+  .swatch.transparent-swatch {
+    background-image:
+      linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%),
+      linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 4px 4px;
+    background-color: #ccc;
+  }
+  input[type="color"] {
+    width: 34px; height: 30px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none;
+  }
+
+  label.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+  label.checkbox-row input { width: 16px; height: 16px; }
+
+  /* --- コンパス（v2 16方向） --- */
+  .compass {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 8px auto;
+  }
+  .compass-btn {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 10.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+  }
+  .compass-btn:hover { border-color: var(--accent); }
+  .compass-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .compass-center {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 8px; height: 8px;
+    margin-left: -4px; margin-top: -4px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  fieldset { border: none; padding: 0; margin: 0; }
+
+  footer {
+    max-width: 980px;
+    margin: 24px auto 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  @media (max-width: 640px) {
+    .slider-row label { width: 76px; font-size: 12px; }
+    .compass { width: 180px; height: 180px; }
+    .compass-btn { width: 34px; height: 34px; margin-left: -17px; margin-top: -17px; font-size: 9.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Codex Pet Playground（ローカル読み込み版）</h1>
+  <span class="privacy-badge">🔒 通信なし — pet.json / spritesheet.webp はブラウザ内だけで処理され、どこにも送信されません</span>
+</header>
+
+<main>
+
+  <section class="panel" id="load-panel">
+    <h2>読み込み</h2>
+    <div class="drop-zone" id="dropZone">
+      <p><strong>pet.json</strong> と <strong>spritesheet.webp</strong> をここにドラッグ＆ドロップ</p>
+      <p>または タップ／クリックしてファイルを選択（2ファイルまとめて選択可）</p>
+      <input type="file" id="fileInput" accept=".json,application/json,.webp,image/webp,image/*" multiple>
+    </div>
+    <div class="file-status">
+      <span class="file-chip missing" id="chipJson">pet.json 未選択</span>
+      <span class="file-chip missing" id="chipImage">spritesheet.webp 未選択</span>
+    </div>
+    <div class="error-box" id="errorBox"></div>
+  </section>
+
+  <section class="panel" id="info-panel" style="display:none;">
+    <h2>ペット情報</h2>
+    <dl class="meta-grid">
+      <div><dt>id</dt><dd id="infoId">—</dd></div>
+      <div><dt>displayName</dt><dd id="infoName">—</dd></div>
+      <div><dt>kind</dt><dd id="infoKind">—</dd></div>
+      <div><dt>画像サイズ</dt><dd id="infoSize">—</dd></div>
+      <div><dt>判定バージョン</dt><dd id="infoVersion">—</dd></div>
+      <div><dt>グリッド</dt><dd id="infoGrid">—</dd></div>
+    </dl>
+    <p id="infoDesc" style="font-size:13px;color:var(--text-dim);margin:10px 0 0;"></p>
+    <div class="warn-box" id="warnBox"></div>
+  </section>
+
+  <section class="panel" id="viewer-panel" style="display:none;">
+    <h2>表示</h2>
+    <div class="viewer-wrap" id="viewerWrap">
+      <canvas id="stage" width="192" height="208"></canvas>
+    </div>
+  </section>
+
+  <section class="panel" id="controls-panel" style="display:none;">
+    <h2>アニメーション</h2>
+    <fieldset class="control-row" id="animButtons"></fieldset>
+
+    <h2 style="margin-top:18px;">16方向（v2のみ）</h2>
+    <div id="compassSection">
+      <label class="checkbox-row" style="margin-bottom:8px;">
+        <input type="checkbox" id="directionModeToggle">
+        向きを個別に確認する（アニメーション再生を止めて静止フレームを表示）
+      </label>
+      <div class="compass" id="compass"></div>
+      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin:4px 0 0;">
+        方位の並び順（N始点・時計回り、行9→行10）はvault側の想定であり、実際のアセット制作時の並び順に合わせて目視確認してください。
+      </p>
+    </div>
+
+    <h2 style="margin-top:18px;">表示調整</h2>
+    <div class="slider-row">
+      <label for="speedRange">再生速度</label>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.05" value="1">
+      <span class="value" id="speedValue">1.00x</span>
+    </div>
+    <div class="slider-row">
+      <label for="scaleRange">表示サイズ</label>
+      <input type="range" id="scaleRange" min="1" max="8" step="0.5" value="3">
+      <span class="value" id="scaleValue">3.0x</span>
+    </div>
+    <div class="slider-row">
+      <label>背景色</label>
+      <div class="bg-swatches" id="bgSwatches">
+        <div class="swatch transparent-swatch active" data-bg="transparent" title="透過（チェッカー）"></div>
+        <div class="swatch" data-bg="#ffffff" style="background:#ffffff;" title="白"></div>
+        <div class="swatch" data-bg="#1a1c21" style="background:#1a1c21;" title="黒系"></div>
+        <div class="swatch" data-bg="#8fd3ff" style="background:#8fd3ff;" title="空色"></div>
+        <div class="swatch" data-bg="#6ee7a8" style="background:#6ee7a8;" title="グリーンバック"></div>
+        <input type="color" id="bgCustom" value="#ffffff" title="カスタム色">
+      </div>
+    </div>
+
+    <h2 style="margin-top:18px;">モバイル互換</h2>
+    <label class="checkbox-row">
+      <input type="checkbox" id="mobileCompatToggle">
+      v1相当で表示する（v2の16方向データを無視し、標準9行のみで再生。実機のモバイル互換確認向け）
+    </label>
+  </section>
+
+</main>
+
+<footer>
+  このページはHTML/CSS/JavaScriptのみの静的ファイルです。fetch/XHRやフォーム送信を一切行わず、選択したファイルはブラウザのメモリ内でのみ扱われます。ページを閉じれば内容は破棄されます。
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const CELL_W = 192, CELL_H = 208, COLS = 8;
+  const STD_ROWS = [
+    { key: 'idle',          label: 'idle / 待機',        row: 0, frames: 6, fps: 6, loop: true  },
+    { key: 'running-right', label: '走る（右）',          row: 1, frames: 8, fps: 8, loop: true  },
+    { key: 'running-left',  label: '走る（左）',          row: 2, frames: 8, fps: 8, loop: true  },
+    { key: 'waving',        label: '手を振る',            row: 3, frames: 4, fps: 8, loop: false },
+    { key: 'jumping',       label: 'ジャンプ',            row: 4, frames: 5, fps: 8, loop: false },
+    { key: 'failed',        label: '失敗 / 困る',         row: 5, frames: 8, fps: 6, loop: false },
+    { key: 'waiting',       label: '待機（確認中）',      row: 6, frames: 6, fps: 6, loop: true  },
+    { key: 'work',          label: '作業中',              row: 7, frames: 6, fps: 6, loop: true  },
+    { key: 'review',        label: 'レビュー',            row: 8, frames: 6, fps: 6, loop: true  },
+  ];
+  const DIRECTION_LABELS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+
+  // --- state ---
+  let petJson = null;
+  let petImage = null;      // HTMLImageElement
+  let petImageURL = null;   // object URL, revoked on replace
+  let jsonFile = null, imageFile = null;
+  let version = null;       // 'v1' | 'v2' | 'unknown'
+  let rows = 0, cols = COLS;
+  let mobileCompat = false; // v1相当に制限
+  let currentAnim = STD_ROWS[0];
+  let frameIndex = 0;
+  let lastFrameTime = 0;
+  let rafId = null;
+  let directionMode = false;
+  let currentDirection = 0;
+  let bgMode = 'transparent';
+  let speedMultiplier = 1;
+  let displayScale = 3;
+
+  // --- DOM refs ---
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const chipJson = document.getElementById('chipJson');
+  const chipImage = document.getElementById('chipImage');
+  const errorBox = document.getElementById('errorBox');
+  const infoPanel = document.getElementById('info-panel');
+  const viewerPanel = document.getElementById('viewer-panel');
+  const controlsPanel = document.getElementById('controls-panel');
+  const warnBox = document.getElementById('warnBox');
+  const stage = document.getElementById('stage');
+  const ctx = stage.getContext('2d');
+  const animButtonsEl = document.getElementById('animButtons');
+  const compassEl = document.getElementById('compass');
+  const compassSection = document.getElementById('compassSection');
+  const directionModeToggle = document.getElementById('directionModeToggle');
+  const speedRange = document.getElementById('speedRange');
+  const speedValue = document.getElementById('speedValue');
+  const scaleRange = document.getElementById('scaleRange');
+  const scaleValue = document.getElementById('scaleValue');
+  const bgSwatches = document.getElementById('bgSwatches');
+  const bgCustom = document.getElementById('bgCustom');
+  const mobileCompatToggle = document.getElementById('mobileCompatToggle');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('show');
+  }
+  function clearError() {
+    errorBox.textContent = '';
+    errorBox.classList.remove('show');
+  }
+
+  // --- ファイル取り込み（アップロードは一切行わない：FileReader / createObjectURL のみ） ---
+  function handleFiles(fileList) {
+    clearError();
+    const files = Array.from(fileList);
+    for (const f of files) {
+      const name = (f.name || '').toLowerCase();
+      if (name.endsWith('.json') || f.type === 'application/json') {
+        jsonFile = f;
+      } else if (name.endsWith('.webp') || f.type.startsWith('image/')) {
+        imageFile = f;
+      }
+    }
+    chipJson.textContent = jsonFile ? `pet.json: ${jsonFile.name}` : 'pet.json 未選択';
+    chipJson.classList.toggle('ok', !!jsonFile);
+    chipJson.classList.toggle('missing', !jsonFile);
+    chipImage.textContent = imageFile ? `spritesheet: ${imageFile.name}` : 'spritesheet.webp 未選択';
+    chipImage.classList.toggle('ok', !!imageFile);
+    chipImage.classList.toggle('missing', !imageFile);
+
+    if (jsonFile && imageFile) {
+      loadPet(jsonFile, imageFile);
+    }
+  }
+
+  function loadPet(jf, imf) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch (e) {
+        showError('pet.json の解析に失敗しました（JSON形式を確認してください）: ' + e.message);
+        return;
+      }
+      petJson = parsed;
+      loadImage(imf);
+    };
+    reader.onerror = () => showError('pet.json の読み込みに失敗しました。');
+    reader.readAsText(jf);
+  }
+
+  function loadImage(imf) {
+    if (petImageURL) URL.revokeObjectURL(petImageURL);
+    petImageURL = URL.createObjectURL(imf);
+    const img = new Image();
+    img.onload = () => {
+      petImage = img;
+      onAssetsReady();
+    };
+    img.onerror = () => showError('spritesheet 画像の読み込みに失敗しました（WebP形式か確認してください）。');
+    img.src = petImageURL;
+  }
+
+  function detectVersion(w, h) {
+    if (w === 1536 && h === 1872) return { version: 'v1', rows: 9 };
+    if (w === 1536 && h === 2288) return { version: 'v2', rows: 11 };
+    // フォールバック：セル寸法から概算
+    const estRows = Math.round(h / CELL_H);
+    return { version: 'unknown', rows: estRows };
+  }
+
+  function onAssetsReady() {
+    const w = petImage.naturalWidth, h = petImage.naturalHeight;
+    const det = detectVersion(w, h);
+    version = det.version;
+    rows = det.rows;
+    cols = COLS;
+
+    document.getElementById('infoId').textContent = petJson.id ?? '—';
+    document.getElementById('infoName').textContent = petJson.displayName ?? '—';
+    document.getElementById('infoKind').textContent = petJson.kind ?? '—';
+    document.getElementById('infoDesc').textContent = petJson.description ?? '';
+    document.getElementById('infoSize').textContent = `${w}×${h}px`;
+    document.getElementById('infoVersion').textContent =
+      version === 'v1' ? 'v1（8列×9行）' :
+      version === 'v2' ? 'v2（8列×11行）' :
+      `不明な規格（推定 ${rows}行）`;
+    document.getElementById('infoGrid').textContent = `${cols}列 × ${rows}行（セル ${CELL_W}×${CELL_H}px）`;
+
+    warnBox.classList.remove('show');
+    if (version === 'unknown') {
+      warnBox.textContent = `想定サイズ（v1: 1536×1872 / v2: 1536×2288）と一致しません。セル寸法から ${rows} 行として推定表示します。`;
+      warnBox.classList.add('show');
+    } else if (petJson.spritesheetPath && imageFile && petJson.spritesheetPath !== imageFile.name) {
+      warnBox.textContent = `pet.json の spritesheetPath（${petJson.spritesheetPath}）と選択したファイル名（${imageFile.name}）が一致していません。内容に問題がなければ無視して構いません。`;
+      warnBox.classList.add('show');
+    }
+
+    infoPanel.style.display = '';
+    viewerPanel.style.display = '';
+    controlsPanel.style.display = '';
+
+    // モバイルでは既定でv1相当を優先する
+    mobileCompat = (version === 'v2' && window.innerWidth < 768);
+    mobileCompatToggle.checked = mobileCompat;
+    applyMobileCompat();
+
+    buildAnimButtons();
+    buildCompass();
+    updateCompassAvailability();
+
+    directionMode = false;
+    directionModeToggle.checked = false;
+    setAnimation(STD_ROWS[0]);
+    startLoop();
+  }
+
+  function effectiveRows() {
+    return mobileCompat ? Math.min(rows, 9) : rows;
+  }
+
+  function has16Directions() {
+    return version === 'v2' && !mobileCompat && rows >= 11;
+  }
+
+  function applyMobileCompat() {
+    mobileCompat = mobileCompatToggle.checked;
+    updateCompassAvailability();
+    if (mobileCompat && directionMode) {
+      directionMode = false;
+      directionModeToggle.checked = false;
+    }
+  }
+
+  function updateCompassAvailability() {
+    const available = has16Directions();
+    compassSection.style.display = (version === 'v2') ? '' : 'none';
+    directionModeToggle.disabled = !available;
+    compassEl.querySelectorAll('.compass-btn').forEach(b => b.disabled = !available);
+    if (!available) {
+      compassEl.style.opacity = '0.4';
+    } else {
+      compassEl.style.opacity = '1';
+    }
+  }
+
+  function buildAnimButtons() {
+    animButtonsEl.innerHTML = '';
+    for (const anim of STD_ROWS) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'anim-btn';
+      btn.textContent = anim.label;
+      btn.disabled = anim.row >= effectiveRows();
+      btn.addEventListener('click', () => {
+        directionMode = false;
+        directionModeToggle.checked = false;
+        setAnimation(anim);
+      });
+      animButtonsEl.appendChild(btn);
+    }
+  }
+
+  function setAnimation(anim) {
+    currentAnim = anim;
+    frameIndex = 0;
+    lastFrameTime = 0;
+    [...animButtonsEl.children].forEach((btn, i) => {
+      btn.classList.toggle('active', STD_ROWS[i].key === anim.key);
+    });
+  }
+
+  function buildCompass() {
+    compassEl.innerHTML = '<div class="compass-center"></div>';
+    const radius = 90;
+    for (let i = 0; i < 16; i++) {
+      const angle = (i * 22.5 - 90) * (Math.PI / 180);
+      const x = 110 + radius * Math.cos(angle);
+      const y = 110 + radius * Math.sin(angle);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'compass-btn';
+      btn.style.left = x + 'px';
+      btn.style.top = y + 'px';
+      btn.textContent = DIRECTION_LABELS[i];
+      btn.title = `方向 ${i + 1} / 16`;
+      btn.addEventListener('click', () => {
+        if (!has16Directions()) return;
+        currentDirection = i;
+        directionMode = true;
+        directionModeToggle.checked = true;
+        [...compassEl.querySelectorAll('.compass-btn')].forEach((b, bi) => b.classList.toggle('active', bi === i));
+      });
+      compassEl.appendChild(btn);
+    }
+  }
+
+  // --- 描画 ---
+  function resizeStage() {
+    stage.width = CELL_W * displayScale;
+    stage.height = CELL_H * displayScale;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  function drawBackground() {
+    if (bgMode === 'transparent') {
+      const tile = 10 * (displayScale / 3);
+      for (let y = 0; y < stage.height; y += tile) {
+        for (let x = 0; x < stage.width; x += tile) {
+          const even = ((Math.floor(x / tile) + Math.floor(y / tile)) % 2) === 0;
+          ctx.fillStyle = even ? '#cfcfcf' : '#e8e8e8';
+          ctx.fillRect(x, y, tile, tile);
+        }
+      }
+    } else {
+      ctx.fillStyle = bgMode;
+      ctx.fillRect(0, 0, stage.width, stage.height);
+    }
+  }
+
+  function drawFrame(row, frame) {
+    drawBackground();
+    if (!petImage) return;
+    const sx = frame * CELL_W;
+    const sy = row * CELL_H;
+    ctx.drawImage(petImage, sx, sy, CELL_W, CELL_H, 0, 0, stage.width, stage.height);
+  }
+
+  function startLoop() {
+    if (rafId) cancelAnimationFrame(rafId);
+    lastFrameTime = 0;
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function tick(ts) {
+    rafId = requestAnimationFrame(tick);
+    if (document.hidden) return;
+
+    if (directionMode) {
+      const row = 9 + (currentDirection >= 8 ? 1 : 0);
+      const frame = currentDirection % 8;
+      drawFrame(row, frame);
+      return;
+    }
+
+    if (!lastFrameTime) lastFrameTime = ts;
+    const fps = Math.max(0.1, currentAnim.fps * speedMultiplier);
+    const frameDuration = 1000 / fps;
+
+    if (ts - lastFrameTime >= frameDuration) {
+      lastFrameTime = ts;
+      frameIndex++;
+      if (frameIndex >= currentAnim.frames) {
+        if (currentAnim.loop) {
+          frameIndex = 0;
+        } else {
+          frameIndex = currentAnim.frames - 1;
+          drawFrame(currentAnim.row, frameIndex);
+          const idleAnim = STD_ROWS[0];
+          setTimeout(() => { if (!directionMode) setAnimation(idleAnim); }, 250);
+          return;
+        }
+      }
+    }
+    drawFrame(currentAnim.row, frameIndex);
+  }
+
+  // --- イベント ---
+  dropZone.addEventListener('click', (e) => {
+    if (e.target === fileInput) return;
+  });
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+    });
+  });
+  dropZone.addEventListener('drop', (e) => {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  directionModeToggle.addEventListener('change', () => {
+    directionMode = directionModeToggle.checked && has16Directions();
+    if (!directionMode) {
+      setAnimation(currentAnim);
+    }
+  });
+
+  speedRange.addEventListener('input', () => {
+    speedMultiplier = parseFloat(speedRange.value);
+    speedValue.textContent = speedMultiplier.toFixed(2) + 'x';
+  });
+
+  scaleRange.addEventListener('input', () => {
+    displayScale = parseFloat(scaleRange.value);
+    scaleValue.textContent = displayScale.toFixed(1) + 'x';
+    resizeStage();
+  });
+
+  bgSwatches.querySelectorAll('.swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      bgMode = sw.dataset.bg;
+      bgSwatches.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+  });
+  bgCustom.addEventListener('input', () => {
+    bgMode = bgCustom.value;
+    bgSwatches.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  });
+
+  mobileCompatToggle.addEventListener('change', () => {
+    applyMobileCompat();
+    buildAnimButtons();
+    setAnimation(STD_ROWS[0]);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      lastFrameTime = 0;
+    }
+  });
+
+  resizeStage();
+})();
+</script>
+</body>
+</html>
