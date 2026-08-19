@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>Codex Pet Playground（ローカル読み込み版）</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ffffff'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%232563eb'/%3E%3C/svg%3E">
 <style>
@@ -22,6 +22,9 @@
     --warn: #b45309;
     --warn-bg: rgba(180,83,9,0.10);
     --warn-border: rgba(180,83,9,0.3);
+    --sat-l: env(safe-area-inset-left, 0px);
+    --sat-r: env(safe-area-inset-right, 0px);
+    --sat-b: env(safe-area-inset-bottom, 0px);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Roboto, sans-serif;
   }
 
@@ -32,40 +35,76 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 16px;
     line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
   }
 
-  header {
-    max-width: 980px;
-    margin: 0 auto 16px;
-  }
-
-  header h1 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 8px;
-  }
-
-  .privacy-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12.5px;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
-    padding: 6px 10px;
-    border-radius: 6px;
-  }
-
-  main {
+  #app {
     max-width: 980px;
     margin: 0 auto;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
+
+  /* ---------- header ---------- */
+  #appHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  #appTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .privacy-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .header-actions { display: flex; gap: 6px; }
+
+  .hbtn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12.5px;
+    padding: 6px 11px;
+    border-radius: 7px;
+    cursor: pointer;
+    min-height: 34px;
+    white-space: nowrap;
+  }
+  .hbtn:hover { border-color: var(--accent); }
+  .hbtn.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- layout groups ---------- */
+  #layout { display: flex; flex-direction: column; gap: 16px; }
+  /* classic: すべてのパネルを #layout 直下のフレックス項目として並べる */
+  #settingsGroup, #settingsScroll, #stageGroup { display: contents; }
+
+  #load-panel     { order: 1; }
+  #info-panel     { order: 2; }
+  #viewer-panel   { order: 3; }
+  #controls-panel { order: 4; }
 
   .panel {
     background: var(--surface);
@@ -83,36 +122,44 @@
     margin: 0 0 12px;
   }
 
-  /* --- 読み込み --- */
+  .is-hidden { display: none !important; }
+
+  /* ---------- 読み込み ---------- */
   .drop-zone {
     border: 1.5px dashed var(--border);
     border-radius: 10px;
-    padding: 28px 16px;
+    padding: 22px 16px;
     text-align: center;
-    cursor: pointer;
     transition: border-color .2s, background .2s;
     position: relative;
   }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: var(--accent-dim);
-  }
-
-  .drop-zone input[type="file"] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-
+  .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
   .drop-zone p { color: var(--text-dim); font-size: 13.5px; margin: 4px 0; }
   .drop-zone strong { color: var(--text); }
 
-  .file-status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-    font-size: 12.5px;
+  .pick-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+
+  .pick-btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    padding: 9px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    min-height: 40px;
   }
+  .pick-btn:hover { border-color: var(--accent); }
+  .pick-btn input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .file-status { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 12.5px; }
 
   .file-chip {
     padding: 4px 10px;
@@ -120,9 +167,7 @@
     border: 1px solid var(--border);
     color: var(--text-dim);
   }
-
   .file-chip.ok { color: var(--accent); border-color: var(--accent-border); }
-  .file-chip.missing { color: var(--text-dim); }
 
   .error-box {
     margin-top: 10px;
@@ -132,16 +177,21 @@
     border: 1px solid var(--danger-border);
     color: var(--danger);
     font-size: 13px;
-    display: none;
   }
-  .error-box.show { display: block; }
 
-  /* --- 情報 --- */
+  .privacy-note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ---------- 情報 ---------- */
   .meta-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 8px 16px;
     font-size: 13px;
+    margin: 0;
   }
   .meta-grid dt { color: var(--text-dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
   .meta-grid dd { margin: 2px 0 0; word-break: break-word; }
@@ -154,39 +204,51 @@
     border: 1px solid var(--warn-border);
     color: var(--warn);
     font-size: 12.5px;
-    display: none;
   }
-  .warn-box.show { display: block; }
 
-  /* --- ビューポート --- */
+  /* ---------- ビュワー ---------- */
+  #viewer-panel { display: flex; flex-direction: column; }
+
   .viewer-wrap {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 220px;
+    position: relative;
+    flex: 1;
+    min-height: 320px;
     border-radius: 8px;
-    overflow: auto;
-    padding: 16px;
+    overflow: hidden;
+    background: var(--surface2);
+    touch-action: none;
+    cursor: grab;
+  }
+  .viewer-wrap:active { cursor: grabbing; }
+
+  #stage { display: block; width: 100%; height: 100%; }
+
+  .viewer-empty {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 13.5px; text-align: center; padding: 16px;
   }
 
-  #stage {
-    image-rendering: -webkit-optimize-contrast;
-    display: block;
+  .viewer-tools {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; flex-wrap: wrap;
   }
+  .viewer-tools .spacer { flex: 1; }
+  .tool-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12.5px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    min-height: 36px;
+  }
+  .tool-btn:hover { border-color: var(--accent); }
+  #zoomReadout { font-size: 12.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 
-  .placeholder {
-    color: var(--text-dim);
-    font-size: 13.5px;
-    text-align: center;
-  }
-
-  /* --- コントロール --- */
-  .control-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
+  /* ---------- クラシックのコントロール ---------- */
+  .control-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   .control-row:last-child { margin-bottom: 0; }
 
   button.anim-btn {
@@ -200,311 +262,645 @@
     min-height: 40px;
   }
   button.anim-btn:hover { border-color: var(--accent); }
-  button.anim-btn.active {
-    background: var(--accent-dim);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
+  button.anim-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
   button.anim-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
+  .slider-row { display: flex; align-items: center; gap: 12px; font-size: 13px; margin-bottom: 12px; }
   .slider-row label { width: 100px; flex-shrink: 0; color: var(--text-dim); }
-  .slider-row input[type="range"] { flex: 1; }
-  .slider-row .value { width: 64px; text-align: right; flex-shrink: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+  .slider-row input[type="range"] { flex: 1; min-width: 80px; }
+  .slider-row .value { width: 64px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
   .bg-swatches { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .swatch {
-    width: 30px; height: 30px;
-    border-radius: 6px;
-    border: 2px solid var(--border);
-    cursor: pointer;
-    flex-shrink: 0;
-  }
+  .swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid var(--border); cursor: pointer; flex-shrink: 0; }
   .swatch.active { border-color: var(--accent); }
   .swatch.transparent-swatch {
     background-image:
-      linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%),
-      linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%);
+      linear-gradient(45deg, #aab6c8 25%, transparent 25%, transparent 75%, #aab6c8 75%),
+      linear-gradient(45deg, #aab6c8 25%, transparent 25%, transparent 75%, #aab6c8 75%);
     background-size: 8px 8px;
     background-position: 0 0, 4px 4px;
-    background-color: #ccc;
+    background-color: #fff;
   }
-  input[type="color"] {
-    width: 34px; height: 30px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none;
-  }
+  input[type="color"] { width: 34px; height: 30px; border: none; border-radius: 6px; padding: 0; cursor: pointer; background: none; }
 
-  label.checkbox-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--text-dim);
-    cursor: pointer;
-  }
-  label.checkbox-row input { width: 16px; height: 16px; }
+  label.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+  label.checkbox-row input { width: 16px; height: 16px; flex-shrink: 0; }
 
-  /* --- コンパス（v2 16方向） --- */
-  .compass {
-    position: relative;
-    width: 220px;
-    height: 220px;
-    margin: 8px auto;
-  }
+  /* ---------- コンパス（クラシックのみ） ---------- */
+  .compass { position: relative; width: 220px; height: 220px; margin: 8px auto; }
   .compass-btn {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    margin-left: -20px;
-    margin-top: -20px;
+    position: absolute; width: 40px; height: 40px;
+    margin-left: -20px; margin-top: -20px;
     border-radius: 50%;
     background: var(--surface2);
     border: 1px solid var(--border);
     color: var(--text-dim);
-    font-size: 10.5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1.2;
+    font-size: 10.5px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
   .compass-btn:hover { border-color: var(--accent); }
-  .compass-btn.active {
-    background: var(--accent-dim);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
+  .compass-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
   .compass-center {
-    position: absolute;
-    left: 50%; top: 50%;
-    width: 8px; height: 8px;
-    margin-left: -4px; margin-top: -4px;
-    border-radius: 50%;
-    background: var(--border);
+    position: absolute; left: 50%; top: 50%;
+    width: 8px; height: 8px; margin-left: -4px; margin-top: -4px;
+    border-radius: 50%; background: var(--border);
   }
+  .compass.disabled { opacity: .4; }
 
   fieldset { border: none; padding: 0; margin: 0; }
 
   footer {
-    max-width: 980px;
-    margin: 24px auto 8px;
     font-size: 12px;
     color: var(--text-dim);
     text-align: center;
+    padding-bottom: 8px;
+  }
+
+  /* =================================================================
+     アケコンUI
+     ================================================================= */
+  #arcade-panel { display: none; }
+  #drawerBackdrop { display: none; }
+
+  .arcade-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* --- レバー --- */
+  .lever-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+  .lever {
+    position: relative;
+    width: 132px; height: 132px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 42%, #ffffff 0%, var(--surface2) 62%, #d5e0f2 100%);
+    border: 2px solid var(--border);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    flex-shrink: 0;
+  }
+  .lever.engaged { border-color: var(--accent); }
+
+  .lever-knob {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 56px; height: 56px;
+    margin-left: -28px; margin-top: -28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 32%, #7aa5f5 0%, var(--accent) 55%, #1a4bbf 100%);
+    box-shadow: 0 3px 8px rgba(23,35,59,0.35);
+    transition: transform .12s cubic-bezier(.2,1.4,.5,1);
+    pointer-events: none;
+  }
+  .lever.engaged .lever-knob { transition: none; }
+
+  .lever-tick {
+    position: absolute;
+    width: 5px; height: 5px;
+    margin-left: -2.5px; margin-top: -2.5px;
+    border-radius: 50%;
+    background: var(--border);
+    pointer-events: none;
+  }
+  .lever-tick.lit { background: var(--accent); transform: scale(1.5); }
+
+  .lever-label {
+    font-size: 11.5px; color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    min-height: 18px;
+  }
+
+  /* --- ボタン --- */
+  .btn-zone {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .arcade-btn {
+    width: 74px; height: 74px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: radial-gradient(circle at 40% 32%, #ffffff 0%, var(--surface2) 70%, #d5e0f2 100%);
+    color: var(--text);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1px;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    transition: transform .06s, box-shadow .06s;
+    box-shadow: 0 3px 0 rgba(23,35,59,0.16);
+  }
+  .arcade-btn b { font-size: 15px; line-height: 1; }
+  .arcade-btn span { font-size: 9.5px; line-height: 1.1; color: var(--text-dim); }
+  .arcade-btn.pressed {
+    background: radial-gradient(circle at 40% 32%, #93b5f7 0%, var(--accent) 75%);
+    border-color: var(--accent);
+    color: #fff;
+    transform: translateY(3px);
+    box-shadow: none;
+  }
+  .arcade-btn.pressed span { color: rgba(255,255,255,.85); }
+  .arcade-btn:disabled { opacity: .35; }
+
+  .arcade-modebar {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 10px; flex-wrap: wrap;
+  }
+  #arcadeStatus { font-size: 11.5px; color: var(--text-dim); }
+
+  /* ---------- アケコンモード時のレイアウト ---------- */
+  body[data-ui="arcade"] {
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body[data-ui="arcade"] #app {
+    height: 100dvh;
+    max-width: none;
+    padding: 8px calc(8px + var(--sat-r)) calc(8px + var(--sat-b)) calc(8px + var(--sat-l));
+    gap: 8px;
+  }
+
+  body[data-ui="arcade"] #appTitle { font-size: 15px; }
+  body[data-ui="arcade"] footer { display: none; }
+
+  body[data-ui="arcade"] #settingsGroup,
+  body[data-ui="arcade"] #settingsScroll,
+  body[data-ui="arcade"] #stageGroup { display: block; }
+
+  body[data-ui="arcade"] #layout {
+    flex: 1;
+    min-height: 0;
+    gap: 8px;
+  }
+
+  body[data-ui="arcade"] #stageGroup {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 8px;
+    position: relative;
+  }
+
+  /* クラシック用の order を打ち消し、コントローラを必ずビュワーの下に置く */
+  body[data-ui="arcade"] #viewer-panel { order: 0; }
+  body[data-ui="arcade"] #arcade-panel { order: 1; }
+
+  body[data-ui="arcade"] #viewer-panel {
+    flex: 1;
+    min-height: 0;
+    padding: 8px;
+  }
+  body[data-ui="arcade"] .viewer-wrap { min-height: 0; }
+  body[data-ui="arcade"] #viewer-panel h2 { display: none; }
+  body[data-ui="arcade"] .viewer-tools { margin-top: 6px; }
+
+  body[data-ui="arcade"] #arcade-panel {
+    display: block;
+    flex-shrink: 0;
+    padding: 10px 12px;
+  }
+
+  /* アニメーションボタン群とコンパスはレバー/ボタンで置き換える */
+  body[data-ui="arcade"] #animButtonsSection,
+  body[data-ui="arcade"] #compassSection { display: none !important; }
+
+  /* 縦画面: 設定はドロワー */
+  body[data-ui="arcade"] #settingsGroup {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    max-height: 82dvh;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 28px rgba(23,35,59,0.18);
+    transform: translateY(102%);
+    transition: transform .22s ease;
+    padding: 10px calc(10px + var(--sat-r)) calc(10px + var(--sat-b)) calc(10px + var(--sat-l));
+  }
+  body[data-ui="arcade"] #settingsGroup.open { transform: translateY(0); }
+
+  body[data-ui="arcade"] #settingsScroll {
+    max-height: calc(82dvh - 30px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body[data-ui="arcade"] #drawerBackdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(23,35,59,0.32);
+    z-index: 39;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  body[data-ui="arcade"] #drawerBackdrop.open { opacity: 1; pointer-events: auto; }
+
+  .drawer-bar { display: none; }
+  .drawer-handle {
+    width: 40px; height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 0 auto;
+  }
+  .drawer-close { position: absolute; right: 10px; top: 4px; }
+  body[data-ui="arcade"] .drawer-bar {
+    display: block;
+    position: relative;
+    padding: 6px 0 10px;
+  }
+
+  /* 横画面: 設定を右カラムに常時表示 */
+  @media (orientation: landscape) {
+    body[data-ui="arcade"] #layout { flex-direction: row; }
+
+    body[data-ui="arcade"] #settingsGroup {
+      position: static;
+      transform: none;
+      box-shadow: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 300px;
+      flex-shrink: 0;
+      max-height: none;
+      min-height: 0;
+      padding: 10px;
+    }
+    body[data-ui="arcade"] #settingsScroll {
+      max-height: 100%;
+      height: 100%;
+      overflow-y: auto;
+    }
+    body[data-ui="arcade"] .drawer-bar { display: none; }
+    body[data-ui="arcade"] #drawerBackdrop { display: none; }
+    body[data-ui="arcade"] #settingsBtn { display: none; }
+
+    body[data-ui="arcade"] .lever { width: 104px; height: 104px; }
+    body[data-ui="arcade"] .lever-knob { width: 44px; height: 44px; margin-left: -22px; margin-top: -22px; }
+    body[data-ui="arcade"] .arcade-btn { width: 58px; height: 58px; }
+    body[data-ui="arcade"] .arcade-btn span { display: none; }
+    body[data-ui="arcade"] .btn-zone { gap: 8px; }
+    body[data-ui="arcade"] #arcade-panel { padding: 6px 10px; }
+    body[data-ui="arcade"] .arcade-modebar { margin-top: 4px; }
+    body[data-ui="arcade"] .lever-label { font-size: 10.5px; min-height: 14px; }
+    body[data-ui="arcade"] .viewer-tools { margin-top: 4px; }
+    body[data-ui="arcade"] .tool-btn { padding: 4px 10px; min-height: 28px; font-size: 11.5px; }
+    body[data-ui="arcade"] #arcadeStatus { display: none; }
+
+    /* オーバーレイ配置: レバー左端・ボタン右端をビュワーに重ねる。
+       スプライト（特に足元）を隠さないよう背景は敷かず、操作部だけを浮かせる。 */
+    body[data-ui="arcade"][data-overlay="on"] #arcade-panel {
+      position: absolute;
+      inset: 0;
+      background: none;
+      border: none;
+      pointer-events: none;
+      padding: 0;
+      z-index: 5;
+    }
+    body[data-ui="arcade"][data-overlay="on"] .arcade-inner {
+      position: absolute;
+      left: 10px; right: 10px; bottom: 46px;
+      align-items: flex-end;
+    }
+    body[data-ui="arcade"][data-overlay="on"] .arcade-modebar {
+      position: absolute;
+      left: 10px; top: 8px;
+      margin: 0;
+    }
+    body[data-ui="arcade"][data-overlay="on"] .arcade-inner > *,
+    body[data-ui="arcade"][data-overlay="on"] .arcade-modebar > * { pointer-events: auto; }
+    body[data-ui="arcade"][data-overlay="on"] .lever,
+    body[data-ui="arcade"][data-overlay="on"] .arcade-btn {
+      box-shadow: 0 2px 10px rgba(23,35,59,0.22);
+    }
+    body[data-ui="arcade"][data-overlay="on"] .lever-label {
+      background: rgba(255,255,255,0.75);
+      border-radius: 999px;
+      padding: 0 8px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .lever { width: 116px; height: 116px; }
+    .lever-knob { width: 48px; height: 48px; margin-left: -24px; margin-top: -24px; }
+    .arcade-btn { width: 64px; height: 64px; }
+    .slider-row label { width: 76px; font-size: 12px; }
   }
 
   @media (max-width: 640px) {
-    .slider-row label { width: 76px; font-size: 12px; }
+    .slider-row label { width: 86px; font-size: 12px; }
     .compass { width: 180px; height: 180px; }
     .compass-btn { width: 34px; height: 34px; margin-left: -17px; margin-top: -17px; font-size: 9.5px; }
   }
 </style>
 </head>
-<body>
+<body data-ui="classic" data-overlay="on">
 
-<header>
-  <h1>Codex Pet Playground（ローカル読み込み版）</h1>
-  <span class="privacy-badge">🔒 通信なし — pet.json / spritesheet.webp はブラウザ内だけで処理され、どこにも送信されません</span>
-</header>
+<div id="app">
 
-<main>
-
-  <section class="panel" id="load-panel">
-    <h2>読み込み</h2>
-    <div class="drop-zone" id="dropZone">
-      <p><strong>pet.json</strong> と <strong>spritesheet.webp</strong> をここにドラッグ＆ドロップ</p>
-      <p>または タップ／クリックしてファイルを選択（2ファイルまとめて選択可）</p>
-      <input type="file" id="fileInput" accept=".json,application/json,.webp,image/webp,image/*" multiple>
+  <header id="appHeader">
+    <h1 id="appTitle">Codex Pet Playground</h1>
+    <span class="privacy-chip" title="読み込んだファイルは外部へ送信されません">🔒 通信なし</span>
+    <div class="header-actions">
+      <button class="hbtn" id="uiModeBtn" type="button">アケコンUI</button>
+      <button class="hbtn" id="settingsBtn" type="button">設定</button>
     </div>
-    <div class="file-status">
-      <span class="file-chip missing" id="chipJson">pet.json 未選択</span>
-      <span class="file-chip missing" id="chipImage">spritesheet.webp 未選択</span>
-    </div>
-    <div class="error-box" id="errorBox"></div>
-  </section>
+  </header>
 
-  <section class="panel" id="info-panel" style="display:none;">
-    <h2>ペット情報</h2>
-    <dl class="meta-grid">
-      <div><dt>id</dt><dd id="infoId">—</dd></div>
-      <div><dt>displayName</dt><dd id="infoName">—</dd></div>
-      <div><dt>kind</dt><dd id="infoKind">—</dd></div>
-      <div><dt>画像サイズ</dt><dd id="infoSize">—</dd></div>
-      <div><dt>判定バージョン</dt><dd id="infoVersion">—</dd></div>
-      <div><dt>グリッド</dt><dd id="infoGrid">—</dd></div>
-    </dl>
-    <p id="infoDesc" style="font-size:13px;color:var(--text-dim);margin:10px 0 0;"></p>
-    <div class="warn-box" id="warnBox"></div>
-  </section>
+  <div id="layout">
 
-  <section class="panel" id="viewer-panel" style="display:none;">
-    <h2>表示</h2>
-    <div class="viewer-wrap" id="viewerWrap">
-      <canvas id="stage" width="192" height="208"></canvas>
-    </div>
-  </section>
+    <div id="settingsGroup">
+      <div class="drawer-bar">
+        <div class="drawer-handle"></div>
+        <button class="hbtn drawer-close" id="drawerCloseBtn" type="button">閉じる</button>
+      </div>
+      <div id="settingsScroll">
 
-  <section class="panel" id="controls-panel" style="display:none;">
-    <h2>アニメーション</h2>
-    <fieldset class="control-row" id="animButtons"></fieldset>
+        <section class="panel" id="load-panel">
+          <h2>読み込み</h2>
+          <div class="drop-zone" id="dropZone">
+            <p><strong>pet.json</strong> と <strong>spritesheet.webp</strong> をここにドラッグ＆ドロップ</p>
+            <p>またはボタンから選択</p>
+            <div class="pick-row">
+              <span class="pick-btn">📄 ファイルを選択
+                <input type="file" id="fileInput" accept=".json,application/json,.webp,image/webp,image/*" multiple>
+              </span>
+              <span class="pick-btn">📁 フォルダを選択
+                <input type="file" id="folderInput" webkitdirectory directory multiple>
+              </span>
+            </div>
+          </div>
+          <div class="file-status">
+            <span class="file-chip" id="chipJson">pet.json 未選択</span>
+            <span class="file-chip" id="chipImage">spritesheet 未選択</span>
+          </div>
+          <div class="error-box is-hidden" id="errorBox"></div>
+          <p class="privacy-note">
+            選択したファイルはブラウザ内でのみ解析されます。サーバーへのアップロードや外部への送信は一切行いません。
+          </p>
+        </section>
 
-    <h2 style="margin-top:18px;">16方向（v2のみ）</h2>
-    <div id="compassSection">
-      <label class="checkbox-row" style="margin-bottom:8px;">
-        <input type="checkbox" id="directionModeToggle">
-        向きを個別に確認する（アニメーション再生を止めて静止フレームを表示）
-      </label>
-      <div class="compass" id="compass"></div>
-      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin:4px 0 0;">
-        方位の並び順（N始点・時計回り、行9→行10）はvault側の想定であり、実際のアセット制作時の並び順に合わせて目視確認してください。
-      </p>
-    </div>
+        <section class="panel is-hidden" id="info-panel">
+          <h2>ペット情報</h2>
+          <dl class="meta-grid">
+            <div><dt>name</dt><dd id="infoName">—</dd></div>
+            <div><dt>id</dt><dd id="infoId">—</dd></div>
+            <div><dt>kind</dt><dd id="infoKind">—</dd></div>
+            <div><dt>画像サイズ</dt><dd id="infoSize">—</dd></div>
+            <div><dt>判定バージョン</dt><dd id="infoVersion">—</dd></div>
+            <div><dt>グリッド</dt><dd id="infoGrid">—</dd></div>
+          </dl>
+          <p id="infoDesc" style="font-size:13px;color:var(--text-dim);margin:10px 0 0;"></p>
+          <div class="warn-box is-hidden" id="warnBox"></div>
+        </section>
 
-    <h2 style="margin-top:18px;">表示調整</h2>
-    <div class="slider-row">
-      <label for="speedRange">再生速度</label>
-      <input type="range" id="speedRange" min="0.25" max="3" step="0.05" value="1">
-      <span class="value" id="speedValue">1.00x</span>
-    </div>
-    <div class="slider-row">
-      <label for="scaleRange">表示サイズ</label>
-      <input type="range" id="scaleRange" min="1" max="8" step="0.5" value="3">
-      <span class="value" id="scaleValue">3.0x</span>
-    </div>
-    <div class="slider-row">
-      <label>背景色</label>
-      <div class="bg-swatches" id="bgSwatches">
-        <div class="swatch transparent-swatch active" data-bg="transparent" title="透過（チェッカー）"></div>
-        <div class="swatch" data-bg="#ffffff" style="background:#ffffff;" title="白"></div>
-        <div class="swatch" data-bg="#1a1c21" style="background:#1a1c21;" title="黒系"></div>
-        <div class="swatch" data-bg="#8fd3ff" style="background:#8fd3ff;" title="空色"></div>
-        <div class="swatch" data-bg="#6ee7a8" style="background:#6ee7a8;" title="グリーンバック"></div>
-        <input type="color" id="bgCustom" value="#ffffff" title="カスタム色">
+        <section class="panel is-hidden" id="controls-panel">
+
+          <div id="animButtonsSection">
+            <h2>アニメーション</h2>
+            <fieldset class="control-row" id="animButtons"></fieldset>
+          </div>
+
+          <div id="compassSection">
+            <h2 style="margin-top:18px;">16方向（v2のみ）</h2>
+            <label class="checkbox-row" style="margin-bottom:8px;">
+              <input type="checkbox" id="directionModeToggle">
+              向きを個別に確認する（再生を止めて静止フレームを表示）
+            </label>
+            <div class="compass" id="compass"></div>
+            <p style="font-size:12px;color:var(--text-dim);text-align:center;margin:4px 0 0;">
+              方位の並び順（N始点・時計回り、行9→行10）は想定値です。実アセットで目視確認してください。
+            </p>
+          </div>
+
+          <h2 style="margin-top:18px;">表示調整</h2>
+          <div class="slider-row">
+            <label for="speedRange">再生速度</label>
+            <input type="range" id="speedRange" min="0.25" max="3" step="0.05" value="1">
+            <span class="value" id="speedValue">1.00x</span>
+          </div>
+          <div class="slider-row">
+            <label for="scaleRange">表示サイズ</label>
+            <input type="range" id="scaleRange" min="0.5" max="10" step="0.1" value="3">
+            <span class="value" id="scaleValue">3.0x</span>
+          </div>
+          <div class="slider-row">
+            <label>背景色</label>
+            <div class="bg-swatches" id="bgSwatches">
+              <div class="swatch transparent-swatch active" data-bg="transparent" title="透過（チェッカー）"></div>
+              <div class="swatch" data-bg="#ffffff" style="background:#ffffff;" title="白"></div>
+              <div class="swatch" data-bg="#17233b" style="background:#17233b;" title="濃紺"></div>
+              <div class="swatch" data-bg="#8fd3ff" style="background:#8fd3ff;" title="空色"></div>
+              <div class="swatch" data-bg="#f2c14e" style="background:#f2c14e;" title="黄"></div>
+              <input type="color" id="bgCustom" value="#ffffff" title="カスタム色">
+            </div>
+          </div>
+
+          <h2 style="margin-top:18px;">表示オプション</h2>
+          <label class="checkbox-row" style="margin-bottom:8px;">
+            <input type="checkbox" id="mobileCompatToggle">
+            v1相当で表示する（v2の16方向を無視し標準9行のみで再生）
+          </label>
+          <label class="checkbox-row" id="overlayToggleRow">
+            <input type="checkbox" id="overlayToggle" checked>
+            横画面でコントローラをビュワーに重ねる（既定ON。OFFにすると縦積みになりますが、
+            スマホ横持ちではビュワーがかなり狭くなります）
+          </label>
+        </section>
+
       </div>
     </div>
 
-    <h2 style="margin-top:18px;">モバイル互換</h2>
-    <label class="checkbox-row">
-      <input type="checkbox" id="mobileCompatToggle">
-      v1相当で表示する（v2の16方向データを無視し、標準9行のみで再生。実機のモバイル互換確認向け）
-    </label>
-  </section>
+    <div id="stageGroup">
 
-</main>
+      <section class="panel" id="viewer-panel">
+        <h2>表示</h2>
+        <div class="viewer-wrap" id="viewerWrap">
+          <canvas id="stage"></canvas>
+          <div class="viewer-empty" id="viewerEmpty">pet.json と spritesheet.webp を読み込むと表示されます</div>
+        </div>
+        <div class="viewer-tools">
+          <button class="tool-btn" id="fitBtn" type="button">フィット</button>
+          <button class="tool-btn" id="resetViewBtn" type="button">リセット</button>
+          <span class="spacer"></span>
+          <span id="zoomReadout">3.0x</span>
+        </div>
+      </section>
 
-<footer>
-  このページはHTML/CSS/JavaScriptのみの静的ファイルです。fetch/XHRやフォーム送信を一切行わず、選択したファイルはブラウザのメモリ内でのみ扱われます。ページを閉じれば内容は破棄されます。
-</footer>
+      <section class="panel" id="arcade-panel">
+        <div class="arcade-inner">
+          <div class="lever-zone">
+            <div class="lever" id="lever">
+              <div class="lever-knob" id="leverKnob"></div>
+            </div>
+            <div class="lever-label" id="leverLabel">ニュートラル</div>
+          </div>
+          <div class="btn-zone" id="btnZone">
+            <button class="arcade-btn" type="button" data-anim="waving"><b>A</b><span>手を振る</span></button>
+            <button class="arcade-btn" type="button" data-anim="failed"><b>B</b><span>失敗</span></button>
+            <button class="arcade-btn" type="button" data-anim="work"><b>C</b><span>作業</span></button>
+            <button class="arcade-btn" type="button" data-anim="review"><b>D</b><span>レビュー</span></button>
+          </div>
+        </div>
+        <div class="arcade-modebar">
+          <button class="hbtn" id="dirModeBtn" type="button">16方向モード</button>
+          <span id="arcadeStatus">レバー: 移動 ／ 押している間だけ再生</span>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <footer>
+    このページはHTML/CSS/JavaScriptのみの静的ファイルです。fetch/XHRやフォーム送信を一切行わず、選択したファイルはブラウザのメモリ内でのみ扱われます。ページを閉じれば内容は破棄されます。
+  </footer>
+
+</div>
+
+<div id="drawerBackdrop"></div>
 
 <script>
 (() => {
   'use strict';
 
   const CELL_W = 192, CELL_H = 208, COLS = 8;
+  const DEFAULT_TITLE = 'Codex Pet Playground';
+
   const STD_ROWS = [
-    { key: 'idle',          label: 'idle / 待機',        row: 0, frames: 6, fps: 6, loop: true  },
-    { key: 'running-right', label: '走る（右）',          row: 1, frames: 8, fps: 8, loop: true  },
-    { key: 'running-left',  label: '走る（左）',          row: 2, frames: 8, fps: 8, loop: true  },
-    { key: 'waving',        label: '手を振る',            row: 3, frames: 4, fps: 8, loop: false },
-    { key: 'jumping',       label: 'ジャンプ',            row: 4, frames: 5, fps: 8, loop: false },
-    { key: 'failed',        label: '失敗 / 困る',         row: 5, frames: 8, fps: 6, loop: false },
-    { key: 'waiting',       label: '待機（確認中）',      row: 6, frames: 6, fps: 6, loop: true  },
-    { key: 'work',          label: '作業中',              row: 7, frames: 6, fps: 6, loop: true  },
-    { key: 'review',        label: 'レビュー',            row: 8, frames: 6, fps: 6, loop: true  },
+    { key: 'idle',          label: 'idle / 待機',   row: 0, frames: 6, fps: 6, loop: true  },
+    { key: 'running-right', label: '走る（右）',     row: 1, frames: 8, fps: 8, loop: true  },
+    { key: 'running-left',  label: '走る（左）',     row: 2, frames: 8, fps: 8, loop: true  },
+    { key: 'waving',        label: '手を振る',       row: 3, frames: 4, fps: 8, loop: false },
+    { key: 'jumping',       label: 'ジャンプ',       row: 4, frames: 5, fps: 8, loop: false },
+    { key: 'failed',        label: '失敗 / 困る',    row: 5, frames: 8, fps: 6, loop: false },
+    { key: 'waiting',       label: '待機（確認中）', row: 6, frames: 6, fps: 6, loop: true  },
+    { key: 'work',          label: '作業中',         row: 7, frames: 6, fps: 6, loop: true  },
+    { key: 'review',        label: 'レビュー',       row: 8, frames: 6, fps: 6, loop: true  },
   ];
+  const ANIM_BY_KEY = Object.fromEntries(STD_ROWS.map(a => [a.key, a]));
+  const LEVER_ANIM = { up: 'jumping', down: 'waiting', left: 'running-left', right: 'running-right' };
   const DIRECTION_LABELS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
-  // --- state ---
-  let petJson = null;
-  let petImage = null;      // HTMLImageElement
-  let petImageURL = null;   // object URL, revoked on replace
-  let jsonFile = null, imageFile = null;
-  let version = null;       // 'v1' | 'v2' | 'unknown'
-  let rows = 0, cols = COLS;
-  let mobileCompat = false; // v1相当に制限
+  // ---------- state ----------
+  let petJson = null, petImage = null, petImageURL = null;
+  let jsonFile = null, imageFile = null, folderName = null;
+  let version = null, rows = 0;
+  let mobileCompat = false;
   let currentAnim = STD_ROWS[0];
-  let frameIndex = 0;
-  let lastFrameTime = 0;
-  let rafId = null;
-  let directionMode = false;
-  let currentDirection = 0;
+  let frameIndex = 0, lastFrameTime = 0, rafId = null;
+  let directionMode = false, currentDirection = 0;
   let bgMode = 'transparent';
   let speedMultiplier = 1;
-  let displayScale = 3;
+  let zoom = 3, panX = 0, panY = 0;
+  let bboxByRow = [];
+  let cssW = 0, cssH = 0;
 
-  // --- DOM refs ---
-  const dropZone = document.getElementById('dropZone');
-  const fileInput = document.getElementById('fileInput');
-  const chipJson = document.getElementById('chipJson');
-  const chipImage = document.getElementById('chipImage');
-  const errorBox = document.getElementById('errorBox');
-  const infoPanel = document.getElementById('info-panel');
-  const viewerPanel = document.getElementById('viewer-panel');
-  const controlsPanel = document.getElementById('controls-panel');
-  const warnBox = document.getElementById('warnBox');
-  const stage = document.getElementById('stage');
+  // arcade input state
+  let leverPointerId = null;
+  let leverDir4 = null;    // 'up' | 'down' | 'left' | 'right' | null
+  let leverDir16 = null;   // 0..15 | null
+  const pressedButtons = [];  // 押された順。最後が優先
+  const heldKeys = new Set();
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const body = document.body;
+  const dropZone = $('dropZone');
+  const fileInput = $('fileInput');
+  const folderInput = $('folderInput');
+  const chipJson = $('chipJson'), chipImage = $('chipImage');
+  const errorBox = $('errorBox'), warnBox = $('warnBox');
+  const infoPanel = $('info-panel'), controlsPanel = $('controls-panel');
+  const viewerWrap = $('viewerWrap'), viewerEmpty = $('viewerEmpty');
+  const stage = $('stage');
   const ctx = stage.getContext('2d');
-  const animButtonsEl = document.getElementById('animButtons');
-  const compassEl = document.getElementById('compass');
-  const compassSection = document.getElementById('compassSection');
-  const directionModeToggle = document.getElementById('directionModeToggle');
-  const speedRange = document.getElementById('speedRange');
-  const speedValue = document.getElementById('speedValue');
-  const scaleRange = document.getElementById('scaleRange');
-  const scaleValue = document.getElementById('scaleValue');
-  const bgSwatches = document.getElementById('bgSwatches');
-  const bgCustom = document.getElementById('bgCustom');
-  const mobileCompatToggle = document.getElementById('mobileCompatToggle');
+  const animButtonsEl = $('animButtons');
+  const compassEl = $('compass'), compassSection = $('compassSection');
+  const directionModeToggle = $('directionModeToggle');
+  const speedRange = $('speedRange'), speedValue = $('speedValue');
+  const scaleRange = $('scaleRange'), scaleValue = $('scaleValue');
+  const bgSwatches = $('bgSwatches'), bgCustom = $('bgCustom');
+  const mobileCompatToggle = $('mobileCompatToggle');
+  const overlayToggle = $('overlayToggle');
+  const appTitle = $('appTitle');
+  const uiModeBtn = $('uiModeBtn'), settingsBtn = $('settingsBtn');
+  const settingsGroup = $('settingsGroup'), drawerBackdrop = $('drawerBackdrop');
+  const lever = $('lever'), leverKnob = $('leverKnob'), leverLabel = $('leverLabel');
+  const btnZone = $('btnZone'), dirModeBtn = $('dirModeBtn'), arcadeStatus = $('arcadeStatus');
+  const fitBtn = $('fitBtn'), resetViewBtn = $('resetViewBtn'), zoomReadout = $('zoomReadout');
 
-  function showError(msg) {
-    errorBox.textContent = msg;
-    errorBox.classList.add('show');
-  }
-  function clearError() {
-    errorBox.textContent = '';
-    errorBox.classList.remove('show');
-  }
+  const show = (el, on) => el.classList.toggle('is-hidden', !on);
 
-  // --- ファイル取り込み（アップロードは一切行わない：FileReader / createObjectURL のみ） ---
+  function showError(msg) { errorBox.textContent = msg; show(errorBox, true); }
+  function clearError() { errorBox.textContent = ''; show(errorBox, false); }
+
+  // =================================================================
+  // ファイル取り込み（FileReader / createObjectURL のみ。外部送信なし）
+  // =================================================================
   function handleFiles(fileList) {
     clearError();
-    const files = Array.from(fileList);
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    let foundJson = null, foundImage = null, foundFolder = null;
+
     for (const f of files) {
+      const rel = f.webkitRelativePath || '';
+      if (rel && !foundFolder) foundFolder = rel.split('/')[0] || null;
       const name = (f.name || '').toLowerCase();
       if (name.endsWith('.json') || f.type === 'application/json') {
-        jsonFile = f;
-      } else if (name.endsWith('.webp') || f.type.startsWith('image/')) {
-        imageFile = f;
+        // pet.json を優先。無ければ最初の .json
+        if (!foundJson || name === 'pet.json') foundJson = f;
+      } else if (name.endsWith('.webp') || (f.type || '').startsWith('image/')) {
+        if (!foundImage) foundImage = f;
       }
     }
+
+    if (foundJson) jsonFile = foundJson;
+    if (foundImage) imageFile = foundImage;
+    if (foundFolder) folderName = foundFolder;
+
     chipJson.textContent = jsonFile ? `pet.json: ${jsonFile.name}` : 'pet.json 未選択';
     chipJson.classList.toggle('ok', !!jsonFile);
-    chipJson.classList.toggle('missing', !jsonFile);
-    chipImage.textContent = imageFile ? `spritesheet: ${imageFile.name}` : 'spritesheet.webp 未選択';
+    chipImage.textContent = imageFile ? `spritesheet: ${imageFile.name}` : 'spritesheet 未選択';
     chipImage.classList.toggle('ok', !!imageFile);
-    chipImage.classList.toggle('missing', !imageFile);
 
-    if (jsonFile && imageFile) {
-      loadPet(jsonFile, imageFile);
+    if (!jsonFile || !imageFile) {
+      if (files.length && (foundFolder || files.length > 1)) {
+        const missing = [!jsonFile && 'pet.json', !imageFile && 'spritesheet(.webp)'].filter(Boolean).join(' と ');
+        showError(`選択内容に ${missing} が見つかりませんでした。`);
+      }
+      return;
     }
+    loadPet(jsonFile, imageFile);
   }
 
   function loadPet(jf, imf) {
     const reader = new FileReader();
     reader.onload = () => {
-      let parsed;
       try {
-        parsed = JSON.parse(reader.result);
+        petJson = JSON.parse(reader.result);
       } catch (e) {
         showError('pet.json の解析に失敗しました（JSON形式を確認してください）: ' + e.message);
         return;
       }
-      petJson = parsed;
       loadImage(imf);
     };
     reader.onerror = () => showError('pet.json の読み込みに失敗しました。');
@@ -515,10 +911,7 @@
     if (petImageURL) URL.revokeObjectURL(petImageURL);
     petImageURL = URL.createObjectURL(imf);
     const img = new Image();
-    img.onload = () => {
-      petImage = img;
-      onAssetsReady();
-    };
+    img.onload = () => { petImage = img; onAssetsReady(); };
     img.onerror = () => showError('spritesheet 画像の読み込みに失敗しました（WebP形式か確認してください）。');
     img.src = petImageURL;
   }
@@ -526,9 +919,14 @@
   function detectVersion(w, h) {
     if (w === 1536 && h === 1872) return { version: 'v1', rows: 9 };
     if (w === 1536 && h === 2288) return { version: 'v2', rows: 11 };
-    // フォールバック：セル寸法から概算
-    const estRows = Math.round(h / CELL_H);
-    return { version: 'unknown', rows: estRows };
+    return { version: 'unknown', rows: Math.max(1, Math.round(h / CELL_H)) };
+  }
+
+  function resolveTitle() {
+    const fromJson = (petJson && (petJson.name || petJson.displayName)) || '';
+    if (fromJson) return String(fromJson);
+    if (folderName) return folderName;
+    return null;
   }
 
   function onAssetsReady() {
@@ -536,35 +934,39 @@
     const det = detectVersion(w, h);
     version = det.version;
     rows = det.rows;
-    cols = COLS;
 
-    document.getElementById('infoId').textContent = petJson.id ?? '—';
-    document.getElementById('infoName').textContent = petJson.displayName ?? '—';
-    document.getElementById('infoKind').textContent = petJson.kind ?? '—';
-    document.getElementById('infoDesc').textContent = petJson.description ?? '';
-    document.getElementById('infoSize').textContent = `${w}×${h}px`;
-    document.getElementById('infoVersion').textContent =
+    const title = resolveTitle();
+    appTitle.textContent = title ? `${title} — Codex Pet Playground` : DEFAULT_TITLE;
+    document.title = title ? `${title}｜Codex Pet Playground` : `${DEFAULT_TITLE}（ローカル読み込み版）`;
+
+    $('infoName').textContent = (petJson.name || petJson.displayName) ?? '—';
+    $('infoId').textContent = petJson.id ?? '—';
+    $('infoKind').textContent = petJson.kind ?? '—';
+    $('infoDesc').textContent = petJson.description ?? '';
+    $('infoSize').textContent = `${w}×${h}px`;
+    $('infoVersion').textContent =
       version === 'v1' ? 'v1（8列×9行）' :
       version === 'v2' ? 'v2（8列×11行）' :
       `不明な規格（推定 ${rows}行）`;
-    document.getElementById('infoGrid').textContent = `${cols}列 × ${rows}行（セル ${CELL_W}×${CELL_H}px）`;
+    $('infoGrid').textContent = `${COLS}列 × ${rows}行（セル ${CELL_W}×${CELL_H}px）`;
 
-    warnBox.classList.remove('show');
+    show(warnBox, false);
     if (version === 'unknown') {
       warnBox.textContent = `想定サイズ（v1: 1536×1872 / v2: 1536×2288）と一致しません。セル寸法から ${rows} 行として推定表示します。`;
-      warnBox.classList.add('show');
-    } else if (petJson.spritesheetPath && imageFile && petJson.spritesheetPath !== imageFile.name) {
-      warnBox.textContent = `pet.json の spritesheetPath（${petJson.spritesheetPath}）と選択したファイル名（${imageFile.name}）が一致していません。内容に問題がなければ無視して構いません。`;
-      warnBox.classList.add('show');
+      show(warnBox, true);
+    } else if (petJson.spritesheetPath && imageFile && !petJson.spritesheetPath.endsWith(imageFile.name)) {
+      warnBox.textContent = `pet.json の spritesheetPath（${petJson.spritesheetPath}）と選択した画像（${imageFile.name}）が一致していません。問題なければ無視して構いません。`;
+      show(warnBox, true);
     }
 
-    infoPanel.style.display = '';
-    viewerPanel.style.display = '';
-    controlsPanel.style.display = '';
+    show(infoPanel, true);
+    show(controlsPanel, true);
+    show(viewerEmpty, false);
 
-    // モバイルでは既定でv1相当を優先する
-    mobileCompat = (version === 'v2' && window.innerWidth < 768);
-    mobileCompatToggle.checked = mobileCompat;
+    computeBBoxes();
+
+    // モバイルでは既定で v1 相当を優先
+    mobileCompatToggle.checked = (version === 'v2' && isCoarsePointer());
     applyMobileCompat();
 
     buildAnimButtons();
@@ -574,38 +976,204 @@
     directionMode = false;
     directionModeToggle.checked = false;
     setAnimation(STD_ROWS[0]);
+    resizeStage();
+    fitToCurrent();
     startLoop();
   }
 
-  function effectiveRows() {
-    return mobileCompat ? Math.min(rows, 9) : rows;
-  }
-
-  function has16Directions() {
-    return version === 'v2' && !mobileCompat && rows >= 11;
-  }
-
-  function applyMobileCompat() {
-    mobileCompat = mobileCompatToggle.checked;
-    updateCompassAvailability();
-    if (mobileCompat && directionMode) {
-      directionMode = false;
-      directionModeToggle.checked = false;
+  // ---------- バウンディングボックス（フィット用） ----------
+  function computeBBoxes() {
+    bboxByRow = [];
+    try {
+      const off = document.createElement('canvas');
+      off.width = petImage.naturalWidth;
+      off.height = petImage.naturalHeight;
+      const octx = off.getContext('2d', { willReadFrequently: true });
+      octx.drawImage(petImage, 0, 0);
+      const W = COLS * CELL_W;
+      for (let r = 0; r < rows; r++) {
+        const data = octx.getImageData(0, r * CELL_H, W, CELL_H).data;
+        let minX = Infinity, minY = Infinity, maxX = -1, maxY = -1;
+        for (let y = 0; y < CELL_H; y++) {
+          const rowOff = y * W;
+          for (let x = 0; x < W; x++) {
+            if (data[(rowOff + x) * 4 + 3] > 8) {
+              const cx = x % CELL_W;
+              if (cx < minX) minX = cx;
+              if (cx > maxX) maxX = cx;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        bboxByRow.push(maxX < 0 ? null : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 });
+      }
+    } catch (e) {
+      // file:// などで getImageData が使えない場合はセル全体にフォールバック
+      bboxByRow = [];
     }
   }
 
-  function updateCompassAvailability() {
-    const available = has16Directions();
-    compassSection.style.display = (version === 'v2') ? '' : 'none';
-    directionModeToggle.disabled = !available;
-    compassEl.querySelectorAll('.compass-btn').forEach(b => b.disabled = !available);
-    if (!available) {
-      compassEl.style.opacity = '0.4';
+  // =================================================================
+  // 描画
+  // =================================================================
+  function resizeStage() {
+    const rect = viewerWrap.getBoundingClientRect();
+    cssW = Math.max(1, rect.width);
+    cssH = Math.max(1, rect.height);
+    const dpr = window.devicePixelRatio || 1;
+    stage.width = Math.round(cssW * dpr);
+    stage.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  function activeRow() {
+    if (directionMode) return 9 + (currentDirection >= 8 ? 1 : 0);
+    return currentAnim.row;
+  }
+
+  function currentBBox() {
+    const r = activeRow();
+    return bboxByRow[r] || null;
+  }
+
+  function fitToCurrent() {
+    const b = currentBBox();
+    if (b && b.w > 0 && b.h > 0) {
+      zoom = Math.min(cssW / b.w, cssH / b.h) * 0.9;
+      const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+      panX = cssW / 2 - bcx * zoom - (cssW - CELL_W * zoom) / 2;
+      panY = cssH / 2 - bcy * zoom - (cssH - CELL_H * zoom) / 2;
     } else {
-      compassEl.style.opacity = '1';
+      zoom = Math.min(cssW / CELL_W, cssH / CELL_H) * 0.95;
+      panX = panY = 0;
+    }
+    clampZoom();
+    syncZoomUI();
+  }
+
+  function resetView() {
+    zoom = Math.min(cssW / CELL_W, cssH / CELL_H) * 0.95;
+    panX = panY = 0;
+    clampZoom();
+    syncZoomUI();
+  }
+
+  function clampZoom() {
+    zoom = Math.min(20, Math.max(0.2, zoom));
+  }
+
+  function syncZoomUI() {
+    zoomReadout.textContent = zoom.toFixed(1) + 'x';
+    scaleValue.textContent = zoom.toFixed(1) + 'x';
+    const v = Math.min(parseFloat(scaleRange.max), Math.max(parseFloat(scaleRange.min), zoom));
+    scaleRange.value = String(v);
+  }
+
+  function drawBackground() {
+    if (bgMode === 'transparent') {
+      const tile = 12;
+      for (let y = 0; y < cssH; y += tile) {
+        for (let x = 0; x < cssW; x += tile) {
+          const even = ((Math.floor(x / tile) + Math.floor(y / tile)) % 2) === 0;
+          ctx.fillStyle = even ? '#dbe4f2' : '#f4f8fd';
+          ctx.fillRect(x, y, tile, tile);
+        }
+      }
+    } else {
+      ctx.fillStyle = bgMode;
+      ctx.fillRect(0, 0, cssW, cssH);
     }
   }
 
+  function drawFrame(row, frame) {
+    ctx.clearRect(0, 0, cssW, cssH);
+    drawBackground();
+    if (!petImage) return;
+    const dw = CELL_W * zoom, dh = CELL_H * zoom;
+    const dx = (cssW - dw) / 2 + panX;
+    const dy = (cssH - dh) / 2 + panY;
+    ctx.drawImage(petImage, frame * CELL_W, row * CELL_H, CELL_W, CELL_H, dx, dy, dw, dh);
+  }
+
+  // =================================================================
+  // 再生ループ
+  // =================================================================
+  function isArcade() { return body.dataset.ui === 'arcade'; }
+
+  function effectiveRows() { return mobileCompat ? Math.min(rows, 9) : rows; }
+  function has16Directions() { return version === 'v2' && !mobileCompat && rows >= 11; }
+
+  function setAnimation(anim) {
+    if (currentAnim !== anim) { frameIndex = 0; lastFrameTime = 0; }
+    currentAnim = anim;
+    [...animButtonsEl.children].forEach((btn, i) => {
+      btn.classList.toggle('active', STD_ROWS[i].key === anim.key);
+    });
+  }
+
+  // アケコンモード: 入力状態から再生対象を決める
+  function resolveFromInput() {
+    if (directionMode && has16Directions()) {
+      if (leverDir16 !== null) currentDirection = leverDir16;
+      return;
+    }
+    if (pressedButtons.length) {
+      setAnimation(ANIM_BY_KEY[pressedButtons[pressedButtons.length - 1]]);
+      return;
+    }
+    if (leverDir4) {
+      setAnimation(ANIM_BY_KEY[LEVER_ANIM[leverDir4]]);
+      return;
+    }
+    setAnimation(STD_ROWS[0]);
+  }
+
+  function startLoop() {
+    if (rafId) cancelAnimationFrame(rafId);
+    lastFrameTime = 0;
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function tick(ts) {
+    rafId = requestAnimationFrame(tick);
+    if (document.hidden || !petImage) return;
+
+    if (isArcade()) resolveFromInput();
+
+    if (directionMode) {
+      drawFrame(9 + (currentDirection >= 8 ? 1 : 0), currentDirection % 8);
+      return;
+    }
+
+    if (!lastFrameTime) lastFrameTime = ts;
+    const fps = Math.max(0.1, currentAnim.fps * speedMultiplier);
+    const frameDuration = 1000 / fps;
+
+    if (ts - lastFrameTime >= frameDuration) {
+      lastFrameTime = ts;
+      frameIndex++;
+      if (frameIndex >= currentAnim.frames) {
+        // アケコンモードは押している間ループ。クラシックは単発アニメを idle へ戻す。
+        if (currentAnim.loop || isArcade()) {
+          frameIndex = 0;
+        } else {
+          frameIndex = currentAnim.frames - 1;
+          drawFrame(currentAnim.row, frameIndex);
+          const idle = STD_ROWS[0];
+          setTimeout(() => { if (!directionMode) setAnimation(idle); }, 250);
+          return;
+        }
+      }
+    }
+    drawFrame(currentAnim.row, frameIndex);
+  }
+
+  // =================================================================
+  // クラシックのコントロール
+  // =================================================================
   function buildAnimButtons() {
     animButtonsEl.innerHTML = '';
     for (const anim of STD_ROWS) {
@@ -623,29 +1191,17 @@
     }
   }
 
-  function setAnimation(anim) {
-    currentAnim = anim;
-    frameIndex = 0;
-    lastFrameTime = 0;
-    [...animButtonsEl.children].forEach((btn, i) => {
-      btn.classList.toggle('active', STD_ROWS[i].key === anim.key);
-    });
-  }
-
   function buildCompass() {
     compassEl.innerHTML = '<div class="compass-center"></div>';
     const radius = 90;
     for (let i = 0; i < 16; i++) {
       const angle = (i * 22.5 - 90) * (Math.PI / 180);
-      const x = 110 + radius * Math.cos(angle);
-      const y = 110 + radius * Math.sin(angle);
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'compass-btn';
-      btn.style.left = x + 'px';
-      btn.style.top = y + 'px';
+      btn.style.left = (110 + radius * Math.cos(angle)) + 'px';
+      btn.style.top = (110 + radius * Math.sin(angle)) + 'px';
       btn.textContent = DIRECTION_LABELS[i];
-      btn.title = `方向 ${i + 1} / 16`;
       btn.addEventListener('click', () => {
         if (!has16Directions()) return;
         currentDirection = i;
@@ -657,106 +1213,334 @@
     }
   }
 
-  // --- 描画 ---
-  function resizeStage() {
-    stage.width = CELL_W * displayScale;
-    stage.height = CELL_H * displayScale;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+  function updateCompassAvailability() {
+    const available = has16Directions();
+    show(compassSection, version === 'v2');
+    directionModeToggle.disabled = !available;
+    dirModeBtn.disabled = !available;
+    compassEl.classList.toggle('disabled', !available);
+    compassEl.querySelectorAll('.compass-btn').forEach(b => { b.disabled = !available; });
+    if (!available && directionMode) {
+      directionMode = false;
+      directionModeToggle.checked = false;
+      dirModeBtn.classList.remove('on');
+    }
+    updateArcadeStatus();
   }
 
-  function drawBackground() {
-    if (bgMode === 'transparent') {
-      const tile = 10 * (displayScale / 3);
-      for (let y = 0; y < stage.height; y += tile) {
-        for (let x = 0; x < stage.width; x += tile) {
-          const even = ((Math.floor(x / tile) + Math.floor(y / tile)) % 2) === 0;
-          ctx.fillStyle = even ? '#cfcfcf' : '#e8e8e8';
-          ctx.fillRect(x, y, tile, tile);
-        }
-      }
-    } else {
-      ctx.fillStyle = bgMode;
-      ctx.fillRect(0, 0, stage.width, stage.height);
+  function applyMobileCompat() {
+    mobileCompat = mobileCompatToggle.checked;
+    updateCompassAvailability();
+  }
+
+  // =================================================================
+  // アケコン: レバー
+  // =================================================================
+  function buildLeverTicks() {
+    lever.querySelectorAll('.lever-tick').forEach(t => t.remove());
+    const count = (directionMode && has16Directions()) ? 16 : 4;
+    const rect = lever.getBoundingClientRect();
+    const radius = (rect.width || 132) / 2 - 10;
+    for (let i = 0; i < count; i++) {
+      const deg = i * (360 / count);
+      const rad = (deg - 90) * Math.PI / 180;
+      const tick = document.createElement('div');
+      tick.className = 'lever-tick';
+      tick.dataset.index = String(i);
+      tick.style.left = `calc(50% + ${radius * Math.cos(rad)}px)`;
+      tick.style.top = `calc(50% + ${radius * Math.sin(rad)}px)`;
+      lever.appendChild(tick);
     }
   }
 
-  function drawFrame(row, frame) {
-    drawBackground();
-    if (!petImage) return;
-    const sx = frame * CELL_W;
-    const sy = row * CELL_H;
-    ctx.drawImage(petImage, sx, sy, CELL_W, CELL_H, 0, 0, stage.width, stage.height);
+  function litTick(index) {
+    lever.querySelectorAll('.lever-tick').forEach(t => {
+      t.classList.toggle('lit', index !== null && Number(t.dataset.index) === index);
+    });
   }
 
-  function startLoop() {
-    if (rafId) cancelAnimationFrame(rafId);
-    lastFrameTime = 0;
-    rafId = requestAnimationFrame(tick);
+  function vibrate(ms) {
+    // Android のみ有効。iOS Safari は非対応なので視覚フィードバックで代替。
+    if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) { /* noop */ } }
   }
 
-  function tick(ts) {
-    rafId = requestAnimationFrame(tick);
-    if (document.hidden) return;
+  function updateLeverFromPoint(clientX, clientY) {
+    const rect = lever.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx, dy = clientY - cy;
+    const dist = Math.hypot(dx, dy);
+    const maxTravel = rect.width / 2 - 26;
+    const clamped = Math.min(dist, maxTravel);
+    const nx = dist ? dx / dist * clamped : 0;
+    const ny = dist ? dy / dist * clamped : 0;
+    leverKnob.style.transform = `translate(${nx}px, ${ny}px)`;
 
-    if (directionMode) {
-      const row = 9 + (currentDirection >= 8 ? 1 : 0);
-      const frame = currentDirection % 8;
-      drawFrame(row, frame);
+    const dead = rect.width * 0.18;
+    if (dist < dead) {
+      setLeverDirection(null, null);
       return;
     }
-
-    if (!lastFrameTime) lastFrameTime = ts;
-    const fps = Math.max(0.1, currentAnim.fps * speedMultiplier);
-    const frameDuration = 1000 / fps;
-
-    if (ts - lastFrameTime >= frameDuration) {
-      lastFrameTime = ts;
-      frameIndex++;
-      if (frameIndex >= currentAnim.frames) {
-        if (currentAnim.loop) {
-          frameIndex = 0;
-        } else {
-          frameIndex = currentAnim.frames - 1;
-          drawFrame(currentAnim.row, frameIndex);
-          const idleAnim = STD_ROWS[0];
-          setTimeout(() => { if (!directionMode) setAnimation(idleAnim); }, 250);
-          return;
-        }
-      }
+    // 上を0度として時計回り
+    const deg = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+    if (directionMode && has16Directions()) {
+      setLeverDirection(null, Math.round(deg / 22.5) % 16);
+    } else {
+      let d4;
+      if (deg >= 315 || deg < 45) d4 = 'up';
+      else if (deg < 135) d4 = 'right';
+      else if (deg < 225) d4 = 'down';
+      else d4 = 'left';
+      setLeverDirection(d4, null);
     }
-    drawFrame(currentAnim.row, frameIndex);
   }
 
-  // --- イベント ---
-  dropZone.addEventListener('click', (e) => {
-    if (e.target === fileInput) return;
+  const D4_LABEL = { up: '↑ ジャンプ', down: '↓ 待機', left: '← 走る（左）', right: '→ 走る（右）' };
+
+  function setLeverDirection(d4, d16) {
+    const changed = (d4 !== leverDir4) || (d16 !== leverDir16);
+    leverDir4 = d4;
+    leverDir16 = d16;
+    if (!changed) return;
+    if (d4 || d16 !== null) vibrate(8);
+
+    if (d16 !== null) {
+      leverLabel.textContent = `${DIRECTION_LABELS[d16]}（${d16 + 1}/16）`;
+      litTick(d16);
+    } else if (d4) {
+      leverLabel.textContent = D4_LABEL[d4];
+      litTick({ up: 0, right: 1, down: 2, left: 3 }[d4]);
+    } else {
+      leverLabel.textContent = 'ニュートラル';
+      litTick(null);
+    }
+  }
+
+  function releaseLever() {
+    leverPointerId = null;
+    lever.classList.remove('engaged');
+    leverKnob.style.transform = 'translate(0px, 0px)';
+    setLeverDirection(null, null);
+  }
+
+  lever.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (leverPointerId !== null) return;
+    leverPointerId = e.pointerId;
+    lever.setPointerCapture(e.pointerId);
+    lever.classList.add('engaged');
+    updateLeverFromPoint(e.clientX, e.clientY);
   });
-  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  lever.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== leverPointerId) return;
+    e.preventDefault();
+    updateLeverFromPoint(e.clientX, e.clientY);
+  });
+  ['pointerup', 'pointercancel'].forEach(type => {
+    lever.addEventListener(type, (e) => {
+      if (e.pointerId !== leverPointerId) return;
+      e.preventDefault();
+      releaseLever();
+    });
+  });
+
+  // =================================================================
+  // アケコン: ボタン（マルチタッチ対応）
+  // =================================================================
+  function pressButton(key) {
+    if (pressedButtons.includes(key)) return;
+    pressedButtons.push(key);
+    vibrate(10);
+    syncButtonVisual();
+  }
+  function releaseButton(key) {
+    const i = pressedButtons.indexOf(key);
+    if (i >= 0) pressedButtons.splice(i, 1);
+    syncButtonVisual();
+  }
+  function syncButtonVisual() {
+    btnZone.querySelectorAll('.arcade-btn').forEach(b => {
+      b.classList.toggle('pressed', pressedButtons.includes(b.dataset.anim));
+    });
+  }
+
+  btnZone.querySelectorAll('.arcade-btn').forEach(btn => {
+    const key = btn.dataset.anim;
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      btn.setPointerCapture(e.pointerId);
+      pressButton(key);
+    });
+    ['pointerup', 'pointercancel'].forEach(type => {
+      btn.addEventListener(type, (e) => { e.preventDefault(); releaseButton(key); });
+    });
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  });
+
+  function updateArcadeStatus() {
+    if (directionMode && has16Directions()) {
+      arcadeStatus.textContent = 'レバー: 16方向の視線（移動は無効）';
+    } else {
+      arcadeStatus.textContent = 'レバー: 移動 ／ 押している間だけ再生';
+    }
+    dirModeBtn.classList.toggle('on', directionMode);
+  }
+
+  dirModeBtn.addEventListener('click', () => {
+    if (!has16Directions()) return;
+    directionMode = !directionMode;
+    directionModeToggle.checked = directionMode;
+    releaseLever();
+    buildLeverTicks();
+    updateArcadeStatus();
+    fitToCurrent();
+  });
+
+  // =================================================================
+  // ビュワーの拡大縮小・パン
+  // =================================================================
+  const viewPointers = new Map();
+  let pinchStart = null;
+
+  viewerWrap.addEventListener('pointerdown', (e) => {
+    viewerWrap.setPointerCapture(e.pointerId);
+    viewPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (viewPointers.size === 2) {
+      const [a, b] = [...viewPointers.values()];
+      pinchStart = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
+    }
+  });
+
+  viewerWrap.addEventListener('pointermove', (e) => {
+    const prev = viewPointers.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    viewPointers.set(e.pointerId, cur);
+
+    if (viewPointers.size === 2 && pinchStart) {
+      const [a, b] = [...viewPointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchStart.dist > 0) {
+        zoom = pinchStart.zoom * (dist / pinchStart.dist);
+        clampZoom();
+        syncZoomUI();
+      }
+    } else if (viewPointers.size === 1) {
+      panX += cur.x - prev.x;
+      panY += cur.y - prev.y;
+    }
+  });
+
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+    viewerWrap.addEventListener(type, (e) => {
+      viewPointers.delete(e.pointerId);
+      if (viewPointers.size < 2) pinchStart = null;
+    });
+  });
+
+  viewerWrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom *= (e.deltaY < 0 ? 1.1 : 1 / 1.1);
+    clampZoom();
+    syncZoomUI();
+  }, { passive: false });
+
+  fitBtn.addEventListener('click', fitToCurrent);
+  resetViewBtn.addEventListener('click', resetView);
+
+  // =================================================================
+  // UIモード / ドロワー
+  // =================================================================
+  function isCoarsePointer() {
+    return window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  }
+
+  function setUiMode(mode) {
+    body.dataset.ui = mode;
+    uiModeBtn.textContent = mode === 'arcade' ? '通常UI' : 'アケコンUI';
+    uiModeBtn.classList.toggle('on', mode === 'arcade');
+    closeDrawer();
+    // レイアウト変化後にキャンバスを測り直す
+    requestAnimationFrame(() => {
+      resizeStage();
+      buildLeverTicks();
+      if (petImage) fitToCurrent();
+    });
+  }
+
+  uiModeBtn.addEventListener('click', () => {
+    setUiMode(body.dataset.ui === 'arcade' ? 'classic' : 'arcade');
+  });
+
+  function openDrawer() {
+    settingsGroup.classList.add('open');
+    drawerBackdrop.classList.add('open');
+  }
+  function closeDrawer() {
+    settingsGroup.classList.remove('open');
+    drawerBackdrop.classList.remove('open');
+  }
+  settingsBtn.addEventListener('click', () => {
+    if (body.dataset.ui !== 'arcade') {
+      // クラシックでは設定は常時表示。読み込みパネルへスクロールするだけ。
+      $('load-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    settingsGroup.classList.contains('open') ? closeDrawer() : openDrawer();
+  });
+  drawerBackdrop.addEventListener('click', closeDrawer);
+  $('drawerCloseBtn').addEventListener('click', closeDrawer);
+
+  overlayToggle.addEventListener('change', () => {
+    body.dataset.overlay = overlayToggle.checked ? 'on' : 'off';
+    requestAnimationFrame(() => { resizeStage(); if (petImage) fitToCurrent(); });
+  });
+
+  // =================================================================
+  // 入力（ファイル / ドロップ / キーボード）
+  // =================================================================
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+  folderInput.addEventListener('change', e => handleFiles(e.target.files));
 
   ['dragenter', 'dragover'].forEach(evt => {
-    dropZone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      dropZone.classList.add('drag-over');
-    });
+    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
   });
   ['dragleave', 'drop'].forEach(evt => {
-    dropZone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-    });
+    dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
   });
   dropZone.addEventListener('drop', (e) => {
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-      handleFiles(e.dataTransfer.files);
-    }
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
   });
 
+  const KEY_ANIM = { KeyZ: 'waving', KeyX: 'failed', KeyC: 'work', KeyV: 'review' };
+  const KEY_DIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (KEY_ANIM[e.code]) { e.preventDefault(); heldKeys.add(e.code); pressButton(KEY_ANIM[e.code]); }
+    else if (KEY_DIR[e.code]) { e.preventDefault(); heldKeys.add(e.code); setLeverDirection(KEY_DIR[e.code], null); }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (!heldKeys.has(e.code)) return;
+    heldKeys.delete(e.code);
+    if (KEY_ANIM[e.code]) releaseButton(KEY_ANIM[e.code]);
+    else if (KEY_DIR[e.code] && leverDir4 === KEY_DIR[e.code]) setLeverDirection(null, null);
+  });
+
+  // クラシックでもキーボード操作を反映させる
+  window.addEventListener('keydown', () => { if (!isArcade()) resolveFromInput(); });
+  window.addEventListener('keyup', () => { if (!isArcade()) resolveFromInput(); });
+
+  // =================================================================
+  // 設定コントロール
+  // =================================================================
   directionModeToggle.addEventListener('change', () => {
     directionMode = directionModeToggle.checked && has16Directions();
-    if (!directionMode) {
-      setAnimation(currentAnim);
-    }
+    buildLeverTicks();
+    updateArcadeStatus();
+    if (petImage) fitToCurrent();
   });
 
   speedRange.addEventListener('input', () => {
@@ -765,9 +1549,10 @@
   });
 
   scaleRange.addEventListener('input', () => {
-    displayScale = parseFloat(scaleRange.value);
-    scaleValue.textContent = displayScale.toFixed(1) + 'x';
-    resizeStage();
+    zoom = parseFloat(scaleRange.value);
+    clampZoom();
+    zoomReadout.textContent = zoom.toFixed(1) + 'x';
+    scaleValue.textContent = zoom.toFixed(1) + 'x';
   });
 
   bgSwatches.querySelectorAll('.swatch').forEach(sw => {
@@ -785,16 +1570,29 @@
   mobileCompatToggle.addEventListener('change', () => {
     applyMobileCompat();
     buildAnimButtons();
+    buildLeverTicks();
     setAnimation(STD_ROWS[0]);
   });
 
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      lastFrameTime = 0;
-    }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lastFrameTime = 0; });
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      resizeStage();
+      buildLeverTicks();
+      if (petImage) fitToCurrent();
+    }, 120);
   });
 
+  // ---------- 初期化 ----------
+  setUiMode(isCoarsePointer() ? 'arcade' : 'classic');
+  buildLeverTicks();
+  updateArcadeStatus();
   resizeStage();
+  resetView();
+  startLoop();
 })();
 </script>
 </body>
