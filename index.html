@@ -25,6 +25,9 @@
     --sat-l: env(safe-area-inset-left, 0px);
     --sat-r: env(safe-area-inset-right, 0px);
     --sat-b: env(safe-area-inset-bottom, 0px);
+    --nav-state-duration: 120ms;
+    --nav-motion-duration: 220ms;
+    --nav-hit-target: 44px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Roboto, sans-serif;
   }
 
@@ -649,7 +652,7 @@
 
 <div id="app">
 
-  <header id="appHeader">
+  <header id="appHeader" data-nav-placement="top" data-nav-layout="push" data-nav-collapse="fixed" data-nav-state="expanded" data-nav-surface="solid">
     <h1 id="appTitle">Codex Pet Playground</h1>
     <span class="privacy-chip" title="読み込んだファイルは外部へ送信されません">🔒 通信なし</span>
     <div class="header-actions">
@@ -660,7 +663,7 @@
 
   <div id="layout">
 
-    <div id="settingsGroup">
+    <div id="settingsGroup" data-nav-placement="bottom" data-nav-layout="overlay" data-nav-collapse="hide" data-nav-state="collapsed" data-nav-surface="solid">
       <div class="drawer-bar">
         <div class="drawer-handle"></div>
         <button class="hbtn drawer-close" id="drawerCloseBtn" type="button">閉じる</button>
@@ -1508,10 +1511,12 @@
 
   function openDrawer() {
     settingsGroup.classList.add('open');
+    settingsGroup.dataset.navState = 'expanded';
     drawerBackdrop.classList.add('open');
   }
   function closeDrawer() {
     settingsGroup.classList.remove('open');
+    settingsGroup.dataset.navState = 'collapsed';
     drawerBackdrop.classList.remove('open');
   }
   settingsBtn.addEventListener('click', () => {
